@@ -1,0 +1,416 @@
+     1                                  ; Write a complete assembly language program to read two
+     2                                  ; matrices A and B and display the result matrix C, which is the
+     3                                  ; product of A and B. Your program should consist of a main
+     4                                  ; procedure that calls the read_matrix procedure twice to read
+     5                                  ; data for A and B. It should then call the matrix_add procedure,
+     6                                  ; which receives pointers to A, B, C, and the size of the matrices.
+     7                                  ; Note that both A and B should have the same size. The main
+     8                                  ; procedure calls another procedure to display matrix (A B and C)
+     9                                  
+    10                                  %include "io.mac"
+     1                              <1> extern   proc_nwln, proc_PutCh, proc_PutStr
+     2                              <1> extern   proc_GetStr, proc_GetCh
+     3                              <1> extern   proc_PutInt, proc_GetInt
+     4                              <1> extern   proc_PutLInt, proc_GetLInt
+     5                              <1> 
+     6                              <1> ;;-------------------------------------------------------------------
+     7                              <1> %macro  .STARTUP  0
+     8                              <1> ;group dgroup .data .bss
+     9                              <1>         global   _start
+    10                              <1> _start:
+    11                              <1> %endmacro
+    12                              <1> ;;-------------------------------------------------------------------
+    13                              <1> 
+    14                              <1> 
+    15                              <1> ;;-------------------------------------------------------------------
+    16                              <1> %macro  .EXIT  0
+    17                              <1>         mov    EAX,1
+    18                              <1>         xor    EBX,EBX
+    19                              <1>         int    0x80
+    20                              <1> %endmacro
+    21                              <1> ;;-------------------------------------------------------------------
+    22                              <1> 
+    23                              <1> 
+    24                              <1> ;;-------------------------------------------------------------------
+    25                              <1> %macro  .DATA 0
+    26                              <1>         segment .data
+    27                              <1> %endmacro
+    28                              <1> ;;-------------------------------------------------------------------
+    29                              <1> 
+    30                              <1> ;;-------------------------------------------------------------------
+    31                              <1> %macro  .UDATA 0
+    32                              <1>         segment .bss
+    33                              <1> %endmacro
+    34                              <1> ;;-------------------------------------------------------------------
+    35                              <1> 
+    36                              <1> ;;-------------------------------------------------------------------
+    37                              <1> %macro  .CODE 0
+    38                              <1>         segment .data
+    39                              <1>         segment .bss
+    40                              <1>         segment .text
+    41                              <1> %endmacro
+    42                              <1> ;;-------------------------------------------------------------------
+    43                              <1> 
+    44                              <1> 
+    45                              <1> ;;-------------------------------------------------------------------
+    46                              <1> %macro  nwln  0 
+    47                              <1>         call    proc_nwln
+    48                              <1> %endmacro
+    49                              <1> ;;-------------------------------------------------------------------
+    50                              <1> 
+    51                              <1> 
+    52                              <1> ;;-------------------------------------------------------------------
+    53                              <1> %macro  PutCh  1 
+    54                              <1>         push    AX
+    55                              <1>         mov     AL,%1
+    56                              <1>         call    proc_PutCh
+    57                              <1>         pop     AX
+    58                              <1> %endmacro
+    59                              <1> ;;-------------------------------------------------------------------
+    60                              <1> 
+    61                              <1> 
+    62                              <1> ;;-------------------------------------------------------------------
+    63                              <1> %macro  PutStr  1 
+    64                              <1>         push    ECX
+    65                              <1>         mov     ECX,%1
+    66                              <1>         call    proc_PutStr
+    67                              <1>         pop     ECX
+    68                              <1> %endmacro
+    69                              <1> ;;-------------------------------------------------------------------
+    70                              <1> 
+    71                              <1> 
+    72                              <1> ;;-------------------------------------------------------------------
+    73                              <1> %macro  GetStr  1-2 81
+    74                              <1>         push    ESI
+    75                              <1>         push    EDI
+    76                              <1>         mov     EDI,%1
+    77                              <1>         mov     ESI,%2
+    78                              <1>         call    proc_GetStr
+    79                              <1>         pop     EDI
+    80                              <1>         pop     ESI
+    81                              <1> %endmacro
+    82                              <1> ;;-------------------------------------------------------------------
+    83                              <1> 
+    84                              <1> 
+    85                              <1> ;;-------------------------------------------------------------------
+    86                              <1> %macro  GetCh   1
+    87                              <1>         push    SI
+    88                              <1>         xor     SI,SI
+    89                              <1> %ifidni %1,AL
+    90                              <1>         ;inc     SI
+    91                              <1>         call    proc_GetCh
+    92                              <1> %elifidni %1,AH
+    93                              <1>         mov     SI,1
+    94                              <1>         call    proc_GetCh
+    95                              <1> %else
+    96                              <1>         push    AX
+    97                              <1>         call    proc_GetCh
+    98                              <1>         mov     %1,AL
+    99                              <1>         pop     AX
+   100                              <1> %endif
+   101                              <1>         pop     SI
+   102                              <1> %endmacro
+   103                              <1> ;;-------------------------------------------------------------------
+   104                              <1> 
+   105                              <1> 
+   106                              <1> ;;-------------------------------------------------------------------
+   107                              <1> %macro  PutInt  1
+   108                              <1>         push    AX
+   109                              <1>         mov     AX,%1
+   110                              <1>         call    proc_PutInt
+   111                              <1>         pop     AX
+   112                              <1> %endmacro
+   113                              <1> ;;-------------------------------------------------------------------
+   114                              <1> 
+   115                              <1> 
+   116                              <1> ;;-------------------------------------------------------------------
+   117                              <1> %macro  GetInt  1
+   118                              <1> %ifnidni %1,AX
+   119                              <1>         push    AX
+   120                              <1>         call    proc_GetInt
+   121                              <1>         mov     %1,AX
+   122                              <1> 	  pop     AX
+   123                              <1> %else 
+   124                              <1>         call  proc_GetInt
+   125                              <1> %endif
+   126                              <1> %endmacro
+   127                              <1> ;;-------------------------------------------------------------------
+   128                              <1> 
+   129                              <1> ;;-------------------------------------------------------------------
+   130                              <1> %macro  PutLInt  1
+   131                              <1>         push    EAX
+   132                              <1>         mov     EAX,%1
+   133                              <1>         call    proc_PutLInt
+   134                              <1>         pop     EAX
+   135                              <1> %endmacro
+   136                              <1> ;;-------------------------------------------------------------------
+   137                              <1> 
+   138                              <1> ;;-------------------------------------------------------------------
+   139                              <1> %macro  GetLInt  1
+   140                              <1> %ifnidni %1,EAX
+   141                              <1>         push    EAX
+   142                              <1>         call    proc_GetLInt
+   143                              <1>         mov     %1,EAX
+   144                              <1> 	  pop     EAX
+   145                              <1> %else 
+   146                              <1>         call  proc_GetLInt
+   147                              <1> %endif
+   148                              <1> %endmacro
+   149                              <1> ;;-------------------------------------------------------------------
+   150                              <1> 
+    11                                  
+    12                                  .DATA
+    12                              <1>  segment .data
+    13 00000000 456E746572206E756D-     msg_dim     db  'Enter number of rows/columns of both matrices: ',0
+    13 00000009 626572206F6620726F-
+    13 00000012 77732F636F6C756D6E-
+    13 0000001B 73206F6620626F7468-
+    13 00000024 206D61747269636573-
+    13 0000002D 3A2000             
+    14 00000030 456E74657220666972-     msg_1       db  'Enter first matrix: ',0
+    14 00000039 7374206D6174726978-
+    14 00000042 3A2000             
+    15 00000045 456E74657220736563-     msg_2       db  'Enter second matrix : ',0
+    15 0000004E 6F6E64206D61747269-
+    15 00000057 78203A2000         
+    16 0000005C 2000                    msg_3       db  ' ',0
+    17 0000005E 526573756C7400          msg_4       db  'Result',0
+    18 00000065 4669727374204D6174-     msg_5       db  'First Matrix is: ',0
+    18 0000006E 7269782069733A2000 
+    19 00000077 5365636F6E64204D61-     msg_6       db  'Second Matrix is: ',0
+    19 00000080 747269782069733A20-
+    19 00000089 00                 
+    20                                  
+    21 0000008A 0000<rept>              matrix1     TIMES   100   dw 0
+    22 00000152 0000<rept>              matrix2     TIMES   100   dw 0
+    23 0000021A 0000<rept>              matrix3     TIMES   100   dw 0
+    24                                  
+    25                                  .UDATA
+    25                              <1>  segment .bss
+    26 00000000 <res 00000002>          m           resw    1
+    27 00000002 <res 00000002>          i           resw    1
+    28 00000004 <res 00000002>          j           resw    1
+    29                                  
+    30 00000006 <res 00000004>          tmp1        resd    1
+    31 0000000A <res 00000004>          tmp2        resd    1
+    32 0000000E <res 00000004>          tmp3        resd    1
+    33                                  
+    34                                  .CODE
+    34                              <1>  segment .data
+    34                              <1>  segment .bss
+    34                              <1>  segment .text
+    35                                      .STARTUP
+    35                              <1> 
+    35                              <1>  global _start
+    35                              <1> _start:
+    36                                  
+    37                                      PutStr  msg_dim             
+    37 00000000 51                  <1>  push ECX
+    37 00000001 B9[00000000]        <1>  mov ECX,%1
+    37 00000006 E8(00000000)        <1>  call proc_PutStr
+    37 0000000B 59                  <1>  pop ECX
+    38                                      nwln
+    38 0000000C E8(00000000)        <1>  call proc_nwln
+    39                                      GetInt  [m]                     ; Get size of matrices
+    39                              <1> %ifnidni %1,AX
+    39 00000011 6650                <1>  push AX
+    39 00000013 E8(00000000)        <1>  call proc_GetInt
+    39 00000018 66A3[00000000]      <1>  mov %1,AX
+    39 0000001E 6658                <1>  pop AX
+    39                              <1> %else
+    39                              <1>  call proc_GetInt
+    39                              <1> %endif
+    40                                      nwln
+    40 00000020 E8(00000000)        <1>  call proc_nwln
+    41                                      
+    42                                      PutStr  msg_1                   ; Message to input first matrix
+    42 00000025 51                  <1>  push ECX
+    42 00000026 B9[30000000]        <1>  mov ECX,%1
+    42 0000002B E8(00000000)        <1>  call proc_PutStr
+    42 00000030 59                  <1>  pop ECX
+    43                                      nwln
+    43 00000031 E8(00000000)        <1>  call proc_nwln
+    44 00000036 668B0D[00000000]            mov     CX, [m]                 ; Store matrix size in CX
+    45 0000003D BB[8A000000]                mov     EBX, matrix1            ; Store address of matrix1 in EBX
+    46 00000042 E8AB000000                  call    read_matrix
+    47                                  
+    48                                      PutStr  msg_2                   ; Message to input second matrix
+    48 00000047 51                  <1>  push ECX
+    48 00000048 B9[45000000]        <1>  mov ECX,%1
+    48 0000004D E8(00000000)        <1>  call proc_PutStr
+    48 00000052 59                  <1>  pop ECX
+    49                                      nwln
+    49 00000053 E8(00000000)        <1>  call proc_nwln
+    50 00000058 668B0D[00000000]            mov     CX, [m]
+    51 0000005F BB[52010000]                mov     EBX, matrix2
+    52 00000064 E889000000                  call    read_matrix
+    53                                  
+    54 00000069 668B0D[00000000]            mov     CX, [m]                 
+    55 00000070 BB[8A000000]                mov     EBX, matrix1
+    56                                      PutStr  msg_5
+    56 00000075 51                  <1>  push ECX
+    56 00000076 B9[65000000]        <1>  mov ECX,%1
+    56 0000007B E8(00000000)        <1>  call proc_PutStr
+    56 00000080 59                  <1>  pop ECX
+    57                                      nwln
+    57 00000081 E8(00000000)        <1>  call proc_nwln
+    58 00000086 E8A2000000                  call    print_matrix            ; Print first matrix
+    59                                  
+    60 0000008B 668B0D[00000000]            mov     CX, [m]
+    61 00000092 BB[52010000]                mov     EBX, matrix2
+    62                                      PutStr  msg_6
+    62 00000097 51                  <1>  push ECX
+    62 00000098 B9[77000000]        <1>  mov ECX,%1
+    62 0000009D E8(00000000)        <1>  call proc_PutStr
+    62 000000A2 59                  <1>  pop ECX
+    63                                      nwln
+    63 000000A3 E8(00000000)        <1>  call proc_nwln
+    64 000000A8 E880000000                  call    print_matrix            ; Print second matrix
+    65                                  
+    66 000000AD 66A1[00000000]              mov     AX, [m]
+    67 000000B3 BB[8A000000]                mov     EBX, matrix1
+    68 000000B8 B9[52010000]                mov     ECX, matrix2
+    69 000000BD BA[1A020000]                mov     EDX, matrix3
+    70 000000C2 E8A6000000                  call    mul_matrix              ; Multiply the two matrices
+    71                                  
+    72                                      PutStr  msg_4
+    72 000000C7 51                  <1>  push ECX
+    72 000000C8 B9[5E000000]        <1>  mov ECX,%1
+    72 000000CD E8(00000000)        <1>  call proc_PutStr
+    72 000000D2 59                  <1>  pop ECX
+    73                                      nwln
+    73 000000D3 E8(00000000)        <1>  call proc_nwln
+    74 000000D8 668B0D[00000000]            mov     CX, [m]
+    75 000000DF BB[1A020000]                mov     EBX, matrix3
+    76 000000E4 E844000000                  call    print_matrix            ; Print the result matrix
+    77                                  
+    78                                  done:
+    79                                      .EXIT
+    79 000000E9 B801000000          <1>  mov EAX,1
+    79 000000EE 31DB                <1>  xor EBX,EBX
+    79 000000F0 CD80                <1>  int 0x80
+    80                                  
+    81                                  read_matrix:                        ; Function to read the matrix
+    82 000000F2 6689CA                      mov     DX, CX
+    83                                      loop1:
+    84                                          PutStr msg_3
+    84 000000F5 51                  <1>  push ECX
+    84 000000F6 B9[5C000000]        <1>  mov ECX,%1
+    84 000000FB E8(00000000)        <1>  call proc_PutStr
+    84 00000100 59                  <1>  pop ECX
+    85                                          nwln
+    85 00000101 E8(00000000)        <1>  call proc_nwln
+    86 00000106 6651                            push    CX
+    87 00000108 6689D1                          mov     CX, DX
+    88                                  
+    89                                          loop2:
+    90                                              GetInt [EBX]
+    90                              <1> %ifnidni %1,AX
+    90 0000010B 6650                <1>  push AX
+    90 0000010D E8(00000000)        <1>  call proc_GetInt
+    90 00000112 668903              <1>  mov %1,AX
+    90 00000115 6658                <1>  pop AX
+    90                              <1> %else
+    90                              <1>  call proc_GetInt
+    90                              <1> %endif
+    91 00000117 83C302                              add     EBX, 2
+    92 0000011A 6649                                dec     CX
+    93 0000011C 6683F900                            cmp     CX, 0
+    94 00000120 75E9                                jne     loop2
+    95                                  
+    96 00000122 6659                            pop     CX
+    97 00000124 6649                            dec     CX
+    98 00000126 6683F900                        cmp     CX, 0
+    99 0000012A 75C9                            jne     loop1
+   100 0000012C C3                          ret
+   101                                  
+   102                                  print_matrix:                         ; Function to print matrix
+   103 0000012D 6689CA                      mov     DX, CX
+   104                                      loop3:
+   105 00000130 6651                            push    CX
+   106 00000132 6689D1                          mov     CX, DX
+   107                                  
+   108                                          loop4:
+   109                                              PutInt [EBX]
+   109 00000135 6650                <1>  push AX
+   109 00000137 668B03              <1>  mov AX,%1
+   109 0000013A E8(00000000)        <1>  call proc_PutInt
+   109 0000013F 6658                <1>  pop AX
+   110                                  			PutStr msg_3
+   110 00000141 51                  <1>  push ECX
+   110 00000142 B9[5C000000]        <1>  mov ECX,%1
+   110 00000147 E8(00000000)        <1>  call proc_PutStr
+   110 0000014C 59                  <1>  pop ECX
+   111 0000014D 83C302                  			add EBX,2
+   112 00000150 6649                    			dec CX
+   113 00000152 6683F900                			cmp CX, 0
+   114 00000156 75DD                    			jne loop4
+   115                                  
+   116                                          nwln
+   116 00000158 E8(00000000)        <1>  call proc_nwln
+   117 0000015D 6659                            pop CX
+   118 0000015F 6649                    		dec CX
+   119 00000161 6683F900                		cmp CX, 0
+   120 00000165 75C9                    		jne loop3
+   121                                  		nwln
+   121 00000167 E8(00000000)        <1>  call proc_nwln
+   122 0000016C C3                          ret
+   123                                  
+   124                                  mul_matrix:
+   125 0000016D 891D[06000000]              mov [tmp1], EBX
+   126 00000173 890D[0A000000]              mov [tmp2], ECX
+   127 00000179 8915[0E000000]              mov [tmp3], EDX
+   128 0000017F 66A3[00000000]              mov [m], AX
+   129 00000185 29C9                        sub ECX, ECX
+   130                                      loop5:
+   131 00000187 66890D[02000000]                mov [i], CX
+   132 0000018E 29D2                            sub EDX, EDX
+   133                                          loop6:
+   134 00000190 668915[04000000]                    mov [j], DX
+   135 00000197 6629C9                              sub CX, CX
+   136 0000019A 29FF                                sub EDI, EDI
+   137                                              loop7:
+   138 0000019C 66A1[02000000]                          mov AX, [i]                     ; Finding matrix1[i][k]     
+   139 000001A2 66F725[00000000]                        mul WORD [m]
+   140 000001A9 6601F8                                  add AX, DI                      ; i*m + k
+   141 000001AC 66BE0200                                mov SI, 2
+   142 000001B0 66F7E6                                  mul SI
+   143 000001B3 6689C6                                  mov SI, AX
+   144 000001B6 8B15[06000000]                          mov EDX, [tmp1]
+   145 000001BC 668B1C32                                mov BX, [EDX + ESI]
+   146                                  
+   147 000001C0 6689F8                                  mov AX, DI                      ; Finding matrix2[k][j]
+   148 000001C3 66F725[00000000]                        mul WORD [m]
+   149 000001CA 660305[04000000]                        add AX, [j]                     ; k*m + j
+   150 000001D1 66BE0200                                mov SI, 2
+   151 000001D5 66F7E6                                  mul SI
+   152 000001D8 6689C6                                  mov SI, AX
+   153 000001DB 8B15[0A000000]                          mov EDX, [tmp2]
+   154 000001E1 668B0432                                mov AX, [EDX + ESI] 
+   155                                                  
+   156 000001E5 66F7E3                                  mul BX
+   157 000001E8 6601C1                                  add CX, AX                      ; matrix1[i][k]*matrix2[k][j]
+   158                                  
+   159 000001EB 6683C701                                add DI, 1
+   160 000001EF 663B3D[00000000]                        cmp DI, [m]
+   161 000001F6 7CA4                                    jl loop7                        ; Loop over all values of k
+   162                                  
+   163 000001F8 66A1[02000000]                      mov AX, [i]
+   164 000001FE 66F725[00000000]                    mul WORD [m]
+   165 00000205 660305[04000000]                    add AX, [j]                         ; i*m + j
+   166 0000020C 66BE0200                            mov SI, 2
+   167 00000210 66F7E6                              mul SI
+   168 00000213 6689C6                              mov SI, AX
+   169 00000216 8B15[0E000000]                      mov EDX, [tmp3]
+   170 0000021C 66890C32                            mov [EDX + ESI], CX                 ; matrix[i][j] = For all K (matrix[i][k]*matrix[k][j])
+   171                                              
+   172 00000220 668B15[04000000]                    mov DX, [j]
+   173 00000227 6683C201                            add DX, 1
+   174 0000022B 663B15[00000000]                    cmp DX, [m]
+   175 00000232 0F8C58FFFFFF                        jl loop6                            ; Loop for columns of matrix2
+   176                                  
+   177 00000238 668B0D[02000000]                mov CX, [i]
+   178 0000023F 6683C101                        add CX, 1
+   179 00000243 663B0D[00000000]                cmp CX, [m]
+   180 0000024A 0F8C37FFFFFF                    jl loop5                                ; Loop for rows of matrix1
+   181 00000250 C3                          ret
